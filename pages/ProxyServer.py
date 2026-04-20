@@ -487,7 +487,7 @@ class ProxyServer(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Proxy & VM Manager")
-        self.setGeometry(150, 150, 1000, 700)
+        self.setGeometry(150, 150, 700, 700)
         self.vm_manager = VMManager()
         self._build_ui()
 
