@@ -15,7 +15,7 @@ class APIPage(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🧠 API & Webhook Automation Center")
-        self.setMinimumSize(1100, 750)
+        self.setMinimumSize(400, 700)
 
         tabs = QTabWidget()
         self.setCentralWidget(tabs)

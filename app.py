@@ -16,8 +16,8 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("🤖 Bot Controller")
-        self.resize(1100, 700)
-        self.setMinimumSize(900, 600)
+        self.resize(400, 600)
+        self.setMinimumSize(400, 600)
         self.app_bot = None
         self.connector = None
 
@@ -50,50 +50,58 @@ class MainWindow(QMainWindow):
         # --- Buttons section ---
         button_layout = QVBoxLayout()
         button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        button_layout.setSpacing(15)
+        button_layout.setSpacing(12)
+        main_layout.addLayout(button_layout)
 
-        # Create buttons
-        main_button, automation_button, api_button, auto_button = {
-            "Main Bot": "background-color: #0078d7; color: white;",
-            "Automation": "background-color: #5c2d91; color: white;",
-            "API Settings": "background-color: #107c10; color: white;",
-            "Auto Mode": "background-color: #d83b01; color: white;"
+        # Minimalist button style - clean, simple, modern
+        button_style = """
+        QPushButton {
+            background-color: #ffffff;
+            color: #333333;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 14px 24px;
+            font-size: 14px;
+            font-family: Segoe UI;
+            font-weight: 500;
+            min-width: 240px;
+            min-height: 44px;
         }
+        QPushButton:hover {
+            background-color: #f5f5f5;
+            border: 1px solid #c0c0c0;
+        }
+        QPushButton:pressed {
+            background-color: #eeeeee;
+            border: 1px solid #b0b0b0;
+        }
+        """
 
+        # Create buttons with uniform minimalist design
         proxy_server = QPushButton("Custom Proxy Server")
-        proxy_server.setFont(QFont("Spotify", 18, QFont.Weight.Bold))
-        proxy_server.setStyleSheet("color: #0078d7; background-color: white; margin-bottom: 20px; font-size: 16px; padding: 10px; border-radius: 5px")
+        proxy_server.setStyleSheet(button_style)
         proxy_server.clicked.connect(self.create_proxy_server)
-        main_layout.addWidget(proxy_server)
+        button_layout.addWidget(proxy_server)
 
-         # Create button
         main_button = QPushButton("PPC Bot Farm")
-        main_button.setFont(QFont("Spotify", 18, QFont.Weight.Bold))
-        main_button.setFixedSize(100, 50)
+        main_button.setStyleSheet(button_style)
         main_button.clicked.connect(self.open_app_bot_window)
-        main_button.setStyleSheet("color: white; background-color: green;  font-size: 16px; padding: 10px; border-radius: 5px;")
-        main_layout.addWidget(main_button)
+        button_layout.addWidget(main_button)
 
         automation_button = QPushButton("Web Automation Bot")
-        automation_button.setFont(QFont("Spotify", 18, QFont.Weight.Bold))
-        automation_button.setFixedSize(200, 50)
+        automation_button.setStyleSheet(button_style)
         automation_button.clicked.connect(self.open_web_automation_bot_window)
-        automation_button.setStyleSheet("color: blue; background-color: white; font-size: 16px; border-radius: 5px;")
-        main_layout.addWidget(automation_button)
+        button_layout.addWidget(automation_button)
 
         api_button = QPushButton("API")
-        api_button.setFont(QFont("Spotify", 18, QFont.Weight.Bold))
-        api_button.setFixedSize(100, 50)
+        api_button.setStyleSheet(button_style)
         api_button.clicked.connect(self.api_page_function)
-        api_button.setStyleSheet("color: white; background-color: red; font-size: 16px; padding: 10px; border-radius: 5px; width: fit-content")
-        main_layout.addWidget(api_button)
+        button_layout.addWidget(api_button)
 
         auto_button = QPushButton("Automation & Integration")
-        auto_button.setFont(QFont("Spotify", 18, QFont.Weight.Bold))
-        auto_button.setFixedSize(200, 50)
+        auto_button.setStyleSheet(button_style)
         auto_button.clicked.connect(self.open_automation_bot_window)
-        auto_button.setStyleSheet("color: black; background-color: white; font-size: 16px; bottom: 20px; border-radius: 5px;")
-        main_layout.addWidget(auto_button)
+        button_layout.addWidget(auto_button)
 
 
     def create_proxy_server(self):
