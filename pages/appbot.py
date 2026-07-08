@@ -89,17 +89,17 @@ class AppBot(QMainWindow):
         layout.addWidget(title)
 
         # Buttons
-        btn_airtable = QPushButton("🔗 Connect Airtable")
-        btn_airtable.clicked.connect(self.connect_airtable)
-        layout.addWidget(btn_airtable)
+        self.btn_airtable = QPushButton("🔗 Connect Airtable")
+        self.btn_airtable.clicked.connect(self.connect_airtable)
+        layout.addWidget(self.btn_airtable)
 
-        btn_proxy = QPushButton("🌐 Connect Proxy")
-        btn_proxy.clicked.connect(self.connect_proxy)
-        layout.addWidget(btn_proxy)
+        self.btn_proxy = QPushButton("🌐 Connect Proxy")
+        self.btn_proxy.clicked.connect(self.connect_proxy)
+        layout.addWidget(self.btn_proxy)
 
-        btn_start = QPushButton("🚀 Start Automation")
-        btn_start.clicked.connect(self.start_automation)
-        layout.addWidget(btn_start)
+        self.btn_start = QPushButton("🚀 Start Automation")
+        self.btn_start.clicked.connect(self.start_automation)
+        layout.addWidget(self.btn_start)
 
         # Progress bar
         self.progress_bar = QProgressBar()
@@ -129,14 +129,8 @@ class AppBot(QMainWindow):
 
     def safe_update(self, callback, *args):
         """Safely update UI from any thread"""
-        # Use a lambda with a queued connection for simple callbacks
-        if not args:
-            QMetaObject.invokeMethod(self, 
-                                   callback.__name__, 
-                                   Qt.ConnectionType.QueuedConnection)
-        else:
-            # For callbacks with arguments, use a queued signal
-            self._queued_signal.emit(callback, args)
+        # Always use the queued signal approach for consistency
+        self._queued_signal.emit(callback, args)
 
     def _handle_queued_update(self, callback, args):
         """Handle queued updates with arguments"""
@@ -151,6 +145,11 @@ class AppBot(QMainWindow):
         self.progress_bar.setValue(value)
 
     @Slot()
+    def _set_status_text(self, text: str):
+        """Internal method to set status label text"""
+        self.status_label.setText(text)
+
+    @Slot()
     def _append_log_text(self, text: str):
         """Internal method to append text to log"""
         self.log_output.append(text)
@@ -162,10 +161,10 @@ class AppBot(QMainWindow):
         """Process queued UI updates"""
         if not hasattr(self, '_updates') or not self._updates:
             return
-            
+
         updates = self._updates.copy()
         self._updates.clear()
-        
+
         for callback, args in updates:
             try:
                 callback(*args)
@@ -176,13 +175,6 @@ class AppBot(QMainWindow):
     def log(self, text: str):
         """Thread-safe logging"""
         self._queued_signal.emit(self._append_log_text, (text,))
-        
-    def _append_log_text(self, text: str):
-        """Internal method to append text to log"""
-        self.log_output.append(text)
-        # Auto-scroll to bottom
-        scrollbar = self.log_output.verticalScrollBar()
-        scrollbar.setValue(scrollbar.maximum())
 
     def update_progress(self, value: int):
         """Thread-safe progress update"""
@@ -213,11 +205,11 @@ class AppBot(QMainWindow):
         if self._is_running:
             self.log("Automation is already running")
             return
-            
+
         self._is_running = True
         self.log("🚀 Starting automation process...")
         self.update_progress(5)
-        self.safe_update(self.status_label.setText, "Running automation...")
+        self.safe_update(self._set_status_text, "Running automation...")
 
         # Disable buttons during automation
         self.safe_update(self._set_buttons_enabled, False)
@@ -230,8 +222,8 @@ class AppBot(QMainWindow):
     def _set_buttons_enabled(self, enabled):
         """Helper to enable/disable UI buttons"""
         for btn in [self.btn_airtable, self.btn_proxy, self.btn_start]:
-            if hasattr(self, btn):
-                getattr(self, btn).setEnabled(enabled)
+            if btn is not None:
+                btn.setEnabled(enabled)
 
     def _run_bot_wrapper(self):
         """Wrapper to handle thread cleanup"""
@@ -248,7 +240,7 @@ class AppBot(QMainWindow):
         """Clean up after automation completes"""
         self._is_running = False
         self.update_progress(100)
-        self.safe_update(self.status_label.setText, "Ready")
+        self.safe_update(self._set_status_text, "Ready")
         self.safe_update(self._set_buttons_enabled, True)
         self.log("✅ Automation completed")
 

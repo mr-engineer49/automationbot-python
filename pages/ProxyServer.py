@@ -15,6 +15,7 @@ Notes:
  - This is a template/starter — adapt paths, ISO names, or cloud provider logic as needed.
 """
 
+from socket import timeout
 import sys
 import subprocess
 import threading
@@ -31,7 +32,7 @@ from PySide6.QtWidgets import (
     QLabel, QListWidget, QListWidgetItem, QMessageBox, QFormLayout, QGroupBox,
     QTabWidget, QTextEdit, QFileDialog, QInputDialog, QSpinBox
 )
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt, Slot, Signal
 
 # ---------------------------
 # Backend: VM management
@@ -163,9 +164,17 @@ class AutomationRunner:
 # ---------------------------
 
 class ProxyTab(QWidget):
+    # Signals for thread-safe UI updates
+    test_result = Signal(str, str)  # title, message
+    test_started = Signal()  # signal when test starts
+    test_finished = Signal()  # signal when test is done
+    
     def __init__(self):
         super().__init__()
         self.proxies = []  # list of dicts: {host, port, user, password}
+        self.test_result.connect(self._show_test_result)
+        self.test_started.connect(self._disable_test_button)
+        self.test_finished.connect(self._reset_test_button)
         self._build_ui()
 
 
@@ -237,30 +246,60 @@ class ProxyTab(QWidget):
             self.proxy_list.takeItem(i)
             del self.proxies[i]
 
+    def _show_test_result(self, title, message):
+        """Slot to show test results from worker thread"""
+        QMessageBox.information(self, title, message)
+
+    def _disable_test_button(self):
+        """Slot to disable test button from main thread"""
+        self.test_btn.setEnabled(False)
+        self.test_btn.setText("Testing...")
+
+    def _reset_test_button(self):
+        """Slot to reset test button state from worker thread"""
+        self.test_btn.setEnabled(True)
+        self.test_btn.setText("Test Selected")
+
     def test_proxy(self):
         i = self.proxy_list.currentRow()
         if i < 0:
             QMessageBox.information(self, "Select", "Select a proxy to test.")
             return
         p = self.proxies[i]
-        proxy_url = f"http://{p['host']}:{p['port']}"
+        # Handle both HTTP and SOCKS proxies
+        protocol = p.get('protocol', 'http').lower()
+        if protocol == 'socks5':
+            proxy_url = f"socks5://{p['host']}:{p['port']}"
+        else:
+            proxy_url = f"http://{p['host']}:{p['port']}"
         proxies = {"http": proxy_url, "https": proxy_url}
-        self.test_btn.setEnabled(False)
-        self.test_btn.setText("Testing...")
+        self.test_started.emit()
         def worker():
             try:
+                import urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
                 start = time.time()
-                r = requests.get("https://httpbin.org/ip", proxies=proxies, timeout=8)
+                # Test with a simple endpoint first (disable SSL verification for proxy testing)
+                r = requests.get("https://httpbin.org/ip", proxies=proxies, timeout=8, verify=False)
                 elapsed = time.time() - start
                 if r.status_code == 200:
-                    QMessageBox.information(self, "Success", f"Proxy works — {elapsed:.2f}s")
+                    self.test_result.emit("Success", f"Proxy works — {elapsed:.2f}s")
                 else:
-                    QMessageBox.warning(self, "Failure", f"Status: {r.status_code}")
+                    self.test_result.emit("Failure", f"Status: {r.status_code}")
+            except requests.exceptions.ProxyError as e:
+                self.test_result.emit("Proxy Error", f"Proxy connection failed: {str(e)}")
+            except requests.exceptions.ConnectTimeout as e:
+                self.test_result.emit("Timeout", "Proxy timed out. Proxy may be down.")
+            except requests.exceptions.ConnectionError as e:
+                self.test_result.emit("Connection Error", f"Connection reset. Proxy may be dead or blocking connections.")
             except Exception as e:
-                QMessageBox.warning(self, "Error", f"{e}")
+                error_msg = str(e)
+                if "MissingDependencies" in error_msg or "SOCKS" in error_msg:
+                    self.test_result.emit("Error", "SOCKS proxies require PySocks. Install with: pip install PySocks")
+                else:
+                    self.test_result.emit("Error", f"{e}")
             finally:
-                self.test_btn.setEnabled(True)
-                self.test_btn.setText("Test Selected")
+                self.test_finished.emit()
         threading.Thread(target=worker, daemon=True).start()
 
     def export_proxies(self):
@@ -275,16 +314,42 @@ class ProxyTab(QWidget):
         if path:
             with open(path, "r", encoding="utf8") as f:
                 data = json.load(f)
-            self.proxies = data
+            # Validate and normalize proxy entries
+            valid_proxies = []
+            for p in data:
+                if isinstance(p, dict):
+                    # Handle format with 'ip' key (map to 'host')
+                    if 'ip' in p and 'port' in p:
+                        normalized = {
+                            'host': p['ip'],
+                            'port': p['port'],
+                            'user': p.get('user', ''),
+                            'password': p.get('password', ''),
+                            'protocol': p.get('protocol', 'http')
+                        }
+                        valid_proxies.append(normalized)
+                    # Handle original format with 'host' key
+                    elif 'host' in p and 'port' in p:
+                        valid_proxies.append(p)
+                    else:
+                        print(f"Skipping invalid proxy entry: {p}")
+                else:
+                    print(f"Skipping invalid proxy entry: {p}")
+            self.proxies = valid_proxies
             self.proxy_list.clear()
             for p in self.proxies:
-                self.proxy_list.addItem(f"{p.get('host')}:{p.get('port')}")
+                protocol = p.get('protocol', 'http').upper()
+                self.proxy_list.addItem(f"{p['host']}:{p['port']} [{protocol}]")
             QMessageBox.information(self, "Imported", f"Imported {len(self.proxies)} entries.")
 
 class VMTab(QWidget):
+    # Signals for thread-safe UI updates
+    output_signal = Signal(str)
+    
     def __init__(self, vm_manager: VMManager):
         super().__init__()
         self.vm_manager = vm_manager
+        self.output_signal.connect(self._append_output)
         self._build_ui()
         self.refresh_vms()
 
@@ -364,6 +429,10 @@ class VMTab(QWidget):
         item = self.vm_list.currentItem()
         return item.data(Qt.UserRole)
 
+    def _append_output(self, text):
+        """Slot to append output from worker thread"""
+        self.output.append(text)
+
     def start_vm(self):
         vm = self._selected_vm()
         if not vm:
@@ -439,18 +508,18 @@ class VMTab(QWidget):
             return
 
         def worker():
-            self.output.append(f"> Connecting to {host}:{port} as {user}")
+            self.output_signal.emit(f"> Connecting to {host}:{port} as {user}")
             runner = AutomationRunner(hostname=host, port=port, username=user, password=pwd)
             try:
                 runner.connect()
                 rc, out, err = runner.run_command(cmd)
-                self.output.append(f"--- RC={rc} ---")
+                self.output_signal.emit(f"--- RC={rc} ---")
                 if out:
-                    self.output.append(out)
+                    self.output_signal.emit(out)
                 if err:
-                    self.output.append("ERROR:\n" + err)
+                    self.output_signal.emit("ERROR:\n" + err)
             except Exception as e:
-                self.output.append(f"Automation error: {e}")
+                self.output_signal.emit(f"Automation error: {e}")
             finally:
                 runner.close()
         threading.Thread(target=worker, daemon=True).start()
@@ -471,14 +540,14 @@ class VMTab(QWidget):
             return
 
         def worker():
-            self.output.append(f"> Uploading {local} to {user}@{host}:{remote}")
+            self.output_signal.emit(f"> Uploading {local} to {user}@{host}:{remote}")
             runner = AutomationRunner(hostname=host, port=port, username=user, password=pwd)
             try:
                 runner.connect()
                 runner.upload_file(local, remote)
-                self.output.append("Upload completed.")
+                self.output_signal.emit("Upload completed.")
             except Exception as e:
-                self.output.append(f"Upload error: {e}")
+                self.output_signal.emit(f"Upload error: {e}")
             finally:
                 runner.close()
         threading.Thread(target=worker, daemon=True).start()
