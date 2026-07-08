@@ -1,191 +1,252 @@
-# 🤖 Automated Bot Platform
+# AutomationBot Python
 
-### A desktop-based automation framework for APIs, bots, and integrations.
+A desktop automation platform built with PySide6 that brings together web automation, API testing, proxy management, and task scheduling into one unified interface.
 
-This tool provides a modular environment for creating, connecting, and automating workflows using:
-- **Airtable** (data-driven campaigns and storage)
-- **Make.com** (automation integration)
-- **n8n** (local or hosted automation flows)
-- **Proxy management** (via Proxifly API or JSON configurations)
-- **Browser automation** (via Selenium and PySide6 GUI)
+## What This Tool Does Right Now
 
-It serves as a control panel for marketing automation, web data extraction, and intelligent task management — designed to be extendable for both developers and non-technical users.
+This is a work-in-progress automation toolkit. Currently, it handles:
 
----
+**Web Automation**
+- Launch Chrome browsers (headless or visible) with Selenium
+- Apply proxy configurations to browser sessions
+- Basic campaign automation framework
 
-## 📦 Features
+**Proxy Management**
+- Import proxies from JSON files or Proxifly API
+- Test HTTP, HTTPS, and SOCKS5 proxies
+- View proxy performance and geolocation data
+- Handle malformed proxy entries gracefully
 
-✅ **Desktop GUI (PySide6)**
-- Central dashboard for all automation tools.
-- Tabs for Web Automation, API, Proxy, and n8n integration.
+**API Testing**
+- Make HTTP requests (GET, POST, PUT, DELETE, PATCH)
+- Set custom headers and JSON bodies
+- View response status, time, and body
+- Save request history to file for replay
 
-✅ **Automation Integrations**
-- Run workflows with **n8n** or **Make.com** directly from the app.
-- Manage automations from local or cloud environments.
+**Custom Scripts**
+- Write and save Python, JavaScript, or Shell/Bash scripts
+- Execute scripts with real-time logging
+- Convert API requests into Python scripts automatically
+- Scripts persist across app restarts
 
-✅ **Proxy Management**
-- Load and test SOCKS5/HTTP proxies from Proxifly or JSON files.
-- Rotate proxies automatically during browser runs.
+**Task Scheduling**
+- Schedule tasks to run at specific times
+- Schedule custom scripts and API requests
+- Load existing scripts/APIs directly into scheduler
+- Execute scheduled tasks on demand
 
-✅ **Airtable Integration**
-- Fetch, view, and update Airtable tables via API key and base ID.
-- Store configuration securely in user space.
+**Airtable Integration**
+- Connect to Airtable via API key
+- Fetch records from tables
+- Use data for automation workflows
 
-✅ **Web Automation**
-- Control browsers with Selenium.
-- Run campaign scripts, load URLs dynamically, and test proxies.
+## Current Features
 
----
+### File Persistence
+All your data is saved to `~/.config_files/`:
+- `scheduled_tasks.json` - Your scheduled tasks
+- `custom_scripts.json` - Your saved scripts
+- `api_request_history.json` - API request history
+- `airtable_config.json` - Airtable credentials
+- `settings.json` - General settings
 
-## 🗂️ Project Structure
+### Module Integration
+The three main utility modules work together:
+- **API Runner** → Convert requests to scripts → Schedule them
+- **Custom Scripts** → Execute scripts → Schedule them
+- **Scheduler** → Load scripts/APIs → Execute them on schedule
 
-automated-bot-py/
-│
-├── desktopapp/
-│ ├── app.py # Main entry point for launching the app
-│ ├── pages/
-│ │ ├── appbot.py # Main automation control window
-│ │ ├── WebAutomationBot.py # Web automation page with proxy + Selenium integration
-│ │ ├── apipages.py # API interface for calling endpoints and webhooks
-│ │ ├── n8nPage.py # n8n integration and management
-│ │ ├── airtableConnector.py # Airtable connection and settings GUI
-│ │ ├── proxyConnector.py # Proxy configuration and testing logic
-│ │ └── ...
-│ │
-│ ├── integrations/ # External service connections
-│ │ ├── make_automation/ # Make.com integration
-│ │ ├── n8n_automation/ # n8n automation scripts
-│ │ └── airtable_automation/ # Airtable workflows
-│ │
-│ ├── automations/ # Custom user or system automations
-│ │ ├── web/ # Browser automation
-│ │ ├── marketing/ # Affiliate / campaign automation
-│ │ └── ...
-│ │
-│ └── config_files/ # User configuration files
-│ ├── airtable_config.json
-│ ├── proxy_config.json
-│ └── ...
-│
-├── requirements.txt
-├── README.md
-└── .gitignore
+### Thread-Safe Operations
+- Background tasks don't freeze the UI
+- Proper Qt signal/slot handling for cross-thread updates
+- Safe file operations from worker threads
 
-yaml
-Copy code
+## Installation
 
----
-
-## ⚙️ Installation
-
-### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/<your-username>/automated-bot-py.git
-cd automated-bot-py/desktopapp
-2️⃣ Create and Activate Virtual Environment
-bash
-Copy code
+# Clone the repo
+git clone https://github.com/yourusername/automationbot-python.git
+cd automationbot-python
+
+# Create virtual environment
 python -m venv venv
-venv\Scripts\activate       # On Windows
-source venv/bin/activate    # On macOS/Linux
-3️⃣ Install Dependencies
-bash
-Copy code
+venv\Scripts\activate  # Windows
+# or
+source venv/bin/activate  # Linux/Mac
+
+# Install dependencies
 pip install -r requirements.txt
-4️⃣ Install n8n (optional)
-If you plan to use n8n locally:
 
-bash
-Copy code
-npm install -g n8n
-Then verify installation:
-
-bash
-Copy code
-n8n --version
-▶️ Running the App
-Once dependencies are installed, run:
-
-bash
-Copy code
+# Run the app
 python app.py
-This will launch the main GUI window, from which you can:
+```
 
-Configure Airtable and proxy settings
+## Project Structure
 
-Run web automation scripts
+```
+automationbot-python/
+├── app.py                          # Main entry point
+├── pages/
+│   ├── WebAutomation.py            # Web automation + utilities
+│   ├── ProxyServer.py              # Proxy management + VM control
+│   ├── appbot.py                   # Airtable automation
+│   ├── ApiPages.py                 # API interface
+│   └── automations_integrations/   # Make.com, n8n integrations
+├── requirements.txt
+└── README.md
+```
 
-Start or monitor n8n automations
+## How to Use
 
-Connect to Make.com workflows
+### Proxy Management
+1. Go to the Proxies tab
+2. Import proxies from JSON or use Proxifly API
+3. Test proxies to verify they work
+4. Proxies are saved and can be used in browser automation
 
-🧩 Configurations
-🔑 Airtable
-You can configure your Airtable connection in the AirtableConnector tab:
+### API Testing
+1. Click "API Runner" in Web Automation
+2. Enter URL, select method, add headers/body
+3. Click "Send Request"
+4. View response in the output panel
+5. History is saved automatically
 
-json
-Copy code
-{
-  "api_key": "your_api_key",
-  "base_id": "appXXXXXXX",
-  "table_name": "tblXXXXXXX",
-  "view_name": "Ready to Run View"
-}
-This is saved automatically in:
+### Custom Scripts
+1. Click "Custom Scripts" in Web Automation
+2. Write your script (Python, JavaScript, or Shell)
+3. Save it with a name
+4. Execute it and view logs in real-time
+5. Use "Create from API" to convert API requests to scripts
 
-makefile
-Copy code
-C:\Users\<YourUser>\.autoflowai_configs\airtable_config.json
-🌍 Proxy Configuration
-Example JSON structure for proxy file:
+### Task Scheduling
+1. Click "Scheduler" in Web Automation
+2. Choose task type (Custom Script, API Request, etc.)
+3. Use "Load from Scripts" or "Load from API History" to quickly populate
+4. Set schedule time and repeat interval
+5. Click "Run Now" to test, or save for scheduled execution
 
-json
-Copy code
-{
-  "proxy": "proxyapi",
-  "protocol": "socks5",
-  "ip": "202.5.47.181",
-  "port": 1080,
-  "https": false,
-  "anonymity": "transparent",
-  "score": 1,
-  "geolocation": {
-    "country": "BD",
-    "city": ""
-  }
-}
-💻 Developer Mode
-To modify UI or logic:
+## What's Working
 
-Each tool or integration is modularized in /pages/.
+✅ Proxy import and testing (HTTP, HTTPS, SOCKS5)
+✅ API request sending and history
+✅ Custom script execution with logging
+✅ Task scheduling with file persistence
+✅ Module integration (API → Script → Schedule workflow)
+✅ Airtable connection and data fetching
+✅ Thread-safe UI updates
+✅ File-based configuration persistence
 
-Add new tabs or connectors by creating a subclass of QMainWindow or QWidget.
+## What Needs Major Upgrades
 
-The main app loads them dynamically through QStackedLayout or QTabWidget.
+### High Priority
+1. **Actual Scheduled Execution**
+   - Currently, "Run Now" works but automatic scheduled execution doesn't run in background
+   - Need a background scheduler service that checks and runs tasks at their scheduled times
+   - Should handle repeat intervals and enable/disable states
 
-🚀 Roadmap
-✅ Version 1.0:
+2. **Campaign Automation**
+   - The campaign framework exists but isn't fully implemented
+   - Need actual campaign logic that uses Airtable data
+   - Should integrate with proxy rotation and browser automation
 
-Proxy rotation
+3. **Error Handling & Logging**
+   - Need better error messages throughout
+   - Centralized logging system instead of print statements
+   - Error recovery mechanisms (retry failed requests, etc.)
 
-Airtable connection
+4. **Proxy Rotation in Browser**
+   - Proxy configuration exists but rotation during automation isn't implemented
+   - Need to cycle through proxies during long-running tasks
 
-Web automation
+### Medium Priority
+5. **n8n Integration**
+   - The n8n page exists but needs actual workflow execution
+   - Should be able to trigger n8n webhooks and monitor status
 
-🧠 Planned (next releases):
+6. **Make.com Integration**
+   - Similar to n8n - needs actual API calls to Make.com
+   - Webhook triggers and response handling
 
-n8n workflow visualizer
+7. **UI Improvements**
+   - Some buttons and layouts could be cleaner
+   - Better visual feedback during long operations
+   - Progress bars for file operations and network requests
 
-AI-powered campaign generator
+8. **Configuration Management**
+   - Need a proper settings dialog instead of JSON editing
+   - Should be able to configure all settings from GUI
 
-Make.com bidirectional sync
+### Nice to Have
+9. **Script Templates**
+   - Pre-built script templates for common tasks
+   - API request templates for popular services
 
-Built-in task scheduler for 24/7 automations
+10. **Export/Import**
+    - Export scripts, tasks, and configurations for backup
+    - Import configurations from other instances
 
+11. **Dashboard**
+    - Overview screen showing running tasks, recent activity
+    - Statistics (success rates, proxy performance, etc.)
 
-🧑‍💻 Author
+12. **Browser Automation Enhancements**
+    - More browser options (Firefox, Edge)
+    - Better element selection and interaction
+    - Screenshot capture and video recording
+
+## Known Issues & Limitations
+
+### Critical Issues
+- **No automatic task execution**: Scheduled tasks are saved but don't run automatically. You must manually click "Run Now". There's no background scheduler service checking times and executing tasks.
+- **Campaign automation not implemented**: The campaign framework exists but has no actual logic. It doesn't use Airtable data or perform any automation.
+- **JavaScript execution doesn't work**: JavaScript scripts show a message saying they need browser context, but there's no actual integration with Selenium for JS execution.
+
+### Functional Limitations
+- **No proxy rotation**: Proxies can be configured but don't rotate during long-running tasks. The same proxy is used throughout a session.
+- **No retry logic**: Failed API requests or proxy tests don't automatically retry. You have to manually retry.
+- **No browser automation beyond launching**: You can launch Chrome with Selenium, but there's no actual automation logic (clicking, form filling, data extraction).
+- **n8n and Make.com are placeholders**: These integrations exist as pages but don't actually connect to or trigger workflows.
+- **No SSH automation for VMs**: The VM tab has SSH connection logic but no actual automation or command execution.
+
+### Technical Issues
+- **Print statements instead of logging**: Many errors and debug messages use `print()` instead of a proper logging system, making debugging difficult.
+- **File operations aren't atomic**: Saving JSON files could corrupt data if the app crashes mid-write. No temp file + rename pattern.
+- **Thread safety gaps**: While most UI updates use Qt signals, some file operations and data manipulations might not be fully thread-safe.
+- **No input validation**: Some user inputs aren't validated before use, which could cause crashes with malformed data.
+- **SOCKS5 SSL issues**: SOCKS5 proxies can fail with SSL certificate verification, requiring `verify=False` which is insecure.
+
+### UX Issues
+- **No settings GUI**: All configuration requires editing JSON files manually in `~/.config_files/`.
+- **No backup/restore**: No way to export or import configurations, scripts, or tasks for backup or sharing.
+- **No progress indicators**: Long operations (file loads, network requests) don't show progress bars.
+- **Error messages are generic**: Many errors just show "Error occurred" without specific details about what went wrong.
+- **UI can freeze**: Some operations block the main thread despite threading being used elsewhere.
+
+### Data Issues
+- **No data migration**: If the JSON schema changes, old files won't automatically upgrade. You might lose data.
+- **No duplicate detection**: You can save multiple scripts or tasks with the same name, causing confusion.
+- **No cleanup**: Old API history accumulates indefinitely with no way to clear or prune it.
+- **No search/filter**: Can't search through scripts, tasks, or API history when lists get long.
+
+### Security Concerns
+- **SSL verification disabled**: Proxy testing uses `verify=False` to handle public proxies, which is insecure for production use.
+- **Credentials stored in plain text**: API keys and passwords are stored in JSON files without encryption.
+- **No rate limiting**: API requests can be sent as fast as you click, potentially getting you rate-limited or banned.
+
+## Dependencies
+
+- PySide6 (Qt GUI framework)
+- Selenium (browser automation)
+- requests (HTTP requests)
+- paramiko (SSH for VM management)
+- Other standard Python libraries
+
+## Author
+
 Enea Hysa
-
 Automation Engineer & Developer
-📧 eneahysa49@gmail.com
-🌐 https://enea-testoralabs.web.app/# automationbot.py
+eneahysa49@gmail.com
+
+## License
+
+This is a personal project. Use it, modify it, break it - it's here to help with automation tasks.

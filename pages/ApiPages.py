@@ -1,8 +1,9 @@
 import sys
 import os
 import json
+import threading
 import requests
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QMetaObject, Q_ARG, Slot
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QTextEdit, QProgressBar,
@@ -15,7 +16,7 @@ class APIPage(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🧠 API & Webhook Automation Center")
-        self.setMinimumSize(1100, 750)
+        self.setMinimumSize(400, 700)
 
         tabs = QTabWidget()
         self.setCentralWidget(tabs)
@@ -163,31 +164,42 @@ class APIPage(QMainWindow):
     def _send_api_request(self):
         method = self.method_box.currentText()
         url = self.api_url_input.text().strip()
-        headers = {}
         data = self.request_body.toPlainText().strip()
 
         if not url:
             QMessageBox.warning(self, "Error", "Please enter an API URL.")
             return
 
-        try:
-            if method == "GET":
-                response = requests.get(url, headers=headers)
-            elif method == "POST":
-                response = requests.post(url, headers=headers, data=data)
-            elif method == "PUT":
-                response = requests.put(url, headers=headers, data=data)
-            elif method == "DELETE":
-                response = requests.delete(url, headers=headers)
-            else:
-                response = None
+        def worker():
+            headers = {}
+            try:
+                if method == "GET":
+                    response = requests.get(url, headers=headers)
+                elif method == "POST":
+                    response = requests.post(url, headers=headers, data=data)
+                elif method == "PUT":
+                    response = requests.put(url, headers=headers, data=data)
+                elif method == "DELETE":
+                    response = requests.delete(url, headers=headers)
+                else:
+                    response = None
 
-            if response is not None:
-                self.response_view.setPlainText(
-                    f"Status: {response.status_code}\n\n{response.text}"
-                )
-        except Exception as e:
-            QMessageBox.critical(self, "API Error", str(e))
+                if response is not None:
+                    text = f"Status: {response.status_code}\n\n{response.text}"
+                    QMetaObject.invokeMethod(self, "_set_response_text", Qt.QueuedConnection,
+                        Q_ARG(str, text))
+            except Exception as e:
+                QMetaObject.invokeMethod(self, "_show_api_error", Qt.QueuedConnection,
+                    Q_ARG(str, str(e)))
+        threading.Thread(target=worker, daemon=True).start()
+
+    @Slot(str)
+    def _set_response_text(self, text: str):
+        self.response_view.setPlainText(text)
+
+    @Slot(str)
+    def _show_api_error(self, error: str):
+        QMessageBox.critical(self, "API Error", error)
 
 
     def _build_webhook_tab(self):

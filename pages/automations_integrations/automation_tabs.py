@@ -8,8 +8,8 @@ class AutomationTabs(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Automation Tabs")
-        self.resize(1100, 700)
-        self.setMinimumSize(900, 600)
+        self.resize(400, 700)
+        self.setMinimumSize(400, 700)
 
          # Main container
         container = QWidget()

@@ -13,7 +13,7 @@ class MakePage(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("💡 Make Automation")
-        self.resize(1000, 700)
+        self.resize(400, 700)
 
         # --- Central Container ---
         container = QWidget()
